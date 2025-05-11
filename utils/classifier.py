@@ -41,12 +41,9 @@ class NudityClassifier:
             with open(temp_path, "wb") as f:
                 f.write(img_bytes)
             
-            # Classify the image
-            logger.info("Classifying image...")
-            result = self.classifier.classify(temp_path)
-            
-            # Get the classification data
-            classification = result[temp_path]
+            # Detect nudity in the image
+            logger.info("Detecting nudity in image...")
+            detections = self.classifier.detect(temp_path)
             
             # Get base64 of the image for display
             with open(temp_path, "rb") as img_file:
@@ -56,16 +53,39 @@ class NudityClassifier:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
             
-            # Prepare the response
-            nudity_score = classification.get('NUDE', 0) * 100
+            # Calculate scores based on detections
+            # Extract nudity related labels
+            nude_labels = ['FEMALE_GENITALIA_EXPOSED', 'MALE_GENITALIA_EXPOSED', 'FEMALE_BREAST_EXPOSED', 
+                         'BUTTOCKS_EXPOSED', 'ANUS_EXPOSED', 'FEET_EXPOSED', 'ARMPITS_EXPOSED']
+            sexy_labels = ['FEMALE_BREAST_COVERED', 'BUTTOCKS_COVERED', 'STOMACH_COVERED', 'INTIMATE_CLOTHING']
+            
+            # Initialize scores
+            nudity_score = 0
+            sexy_score = 0
+            detection_count = max(1, len(detections))
+            
+            # Calculate scores based on detected objects
+            for detection in detections:
+                if detection['label'] in nude_labels:
+                    nudity_score += detection['score']
+                elif detection['label'] in sexy_labels:
+                    sexy_score += detection['score']
+            
+            # Normalize scores to 0-100 range
+            nudity_score = min(100, (nudity_score / detection_count) * 100)
+            sexy_score = min(100, (sexy_score / detection_count) * 100)
+            safe_score = max(0, 100 - nudity_score - sexy_score)
+            
+            # Get nudity level description
             nudity_level = self._get_nudity_level(nudity_score)
             
             return {
-                'safe_score': round(classification.get('SAFE', 0) * 100, 2),
+                'safe_score': round(safe_score, 2),
                 'nudity_score': round(nudity_score, 2),
                 'nudity_level': nudity_level,
-                'sexy_score': round(classification.get('SEXY', 0) * 100, 2),
-                'image': encoded_img
+                'sexy_score': round(sexy_score, 2),
+                'image': encoded_img,
+                'detections': detections  # Include the raw detections for debugging
             }
         except Exception as e:
             logger.exception(f"Error in classify_image: {str(e)}")
