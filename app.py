@@ -43,6 +43,11 @@ def classify_image():
             logger.error("No file selected")
             return jsonify({'error': 'No file selected'}), 400
         
+        # Check if filename exists
+        if not file.filename:
+            logger.error("No filename provided")
+            return jsonify({'error': 'No filename provided'}), 400
+            
         # Check if the file has an allowed extension
         if not allowed_file(file.filename):
             logger.error(f"File type not allowed: {file.filename}")

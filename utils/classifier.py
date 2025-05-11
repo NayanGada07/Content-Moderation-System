@@ -110,10 +110,31 @@ class NudityClassifier:
                         else:
                             logger.debug(f"Found other element: {cls} with score {score}")
                 
-                # Calculate final scores
+                # Calculate final scores with a bonus for multiple exposed parts
                 if nude_hits > 0:
-                    nudity_score = (nude_score_sum / nude_hits) * 100
-                    nudity_score = min(100, nudity_score) 
+                    # Base score from the detected parts
+                    base_score = (nude_score_sum / nude_hits) * 100
+                    
+                    # Apply a multiplier based on how many different nude parts were detected
+                    # More exposed parts = higher multiplier
+                    multiplier = 1.0
+                    if nude_hits >= 2:
+                        multiplier = 1.1
+                    if nude_hits >= 3:
+                        multiplier = 1.2
+                    if nude_hits >= 4:
+                        multiplier = 1.3
+                    
+                    # Significantly increase the score if genitalia are exposed
+                    genital_bonus = 0
+                    for detection in detections:
+                        if 'class' in detection and detection['class'] in ['FEMALE_GENITALIA_EXPOSED', 'MALE_GENITALIA_EXPOSED']:
+                            genital_bonus = 15
+                            break
+                    
+                    # Calculate final nudity score
+                    nudity_score = min(100, base_score * multiplier + genital_bonus)
+                    logger.debug(f"Nudity base score: {base_score:.2f}, multiplier: {multiplier}, bonus: {genital_bonus}, final: {nudity_score:.2f}")
                 
                 if sexy_hits > 0:
                     sexy_score = (sexy_score_sum / sexy_hits) * 50  # Reduce the impact of sexy content
@@ -121,7 +142,7 @@ class NudityClassifier:
                 
                 # If we have no nude elements but have sexy elements, reduce the overall nudity score
                 if nude_hits == 0 and sexy_hits > 0:
-                    nudity_score = sexy_score * 0.4  # Sexy content contributes little to nudity if no nudity detected
+                    nudity_score = sexy_score * 0.3  # Sexy content contributes little to nudity if no nudity detected
             else:
                 # No detections, assume image is safe
                 logger.info("No detections found in image")
@@ -180,13 +201,13 @@ class NudityClassifier:
         Returns:
             str: Descriptive nudity level
         """
-        if nudity_score < 15:
+        if nudity_score < 10:
             return "Safe"
-        elif nudity_score < 40:
+        elif nudity_score < 30:
             return "Low"
-        elif nudity_score < 70:
+        elif nudity_score < 50:
             return "Moderate"
-        elif nudity_score < 90:
+        elif nudity_score < 75:
             return "High"
         else:
             return "Extreme"
