@@ -1,0 +1,100 @@
+/* Custom styles to complement Bootstrap */
+
+/* Add some spacing and style to the application */
+body {
+    min-height: 100vh;
+    padding-bottom: 2rem;
+}
+
+/* Image preview styling */
+.image-preview-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.375rem;
+    background-color: var(--bs-dark);
+    max-height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#preview-image {
+    max-width: 100%;
+    max-height: 350px;
+    object-fit: contain;
+}
+
+/* Progress bar improvements */
+.progress-container {
+    margin-bottom: 1.5rem;
+}
+
+.progress {
+    height: 1.5rem;
+    background-color: var(--bs-dark);
+}
+
+/* File input styling */
+#image-upload {
+    cursor: pointer;
+}
+
+/* Loading spinner styling */
+#loading {
+    padding: 2rem;
+}
+
+#loading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Improve alerts */
+.alert {
+    border-left: 5px solid;
+}
+
+.alert-success {
+    border-left-color: var(--bs-success);
+}
+
+.alert-warning {
+    border-left-color: var(--bs-warning);
+}
+
+.alert-danger {
+    border-left-color: var(--bs-danger);
+}
+
+.alert-info {
+    border-left-color: var(--bs-info);
+}
+
+/* Card styling */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid var(--bs-gray-700);
+}
+
+/* Footer styling */
+footer {
+    border-top: 1px solid var(--bs-gray-700);
+    padding-top: 1.5rem;
+    font-size: 0.875rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .col-md-5, .col-md-7 {
+        padding: 0.5rem;
+    }
+    
+    .image-preview-container {
+        max-height: 250px;
+        margin-bottom: 1rem;
+    }
+    
+    #preview-image {
+        max-height: 250px;
+    }
+}
