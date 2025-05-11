@@ -56,10 +56,28 @@ class NudityClassifier:
             # Debug the structure of detections
             logger.debug(f"Detection result structure: {detections}")
             
-            # Initialize scores - use a simpler approach for now
-            # If detections contain any nudity, assign a score based on that
+            # Initialize scores
             nudity_score = 0
             sexy_score = 0
+            
+            # Define categories for classification
+            nude_classes = [
+                'FEMALE_GENITALIA_EXPOSED', 'MALE_GENITALIA_EXPOSED', 
+                'FEMALE_BREAST_EXPOSED', 'BUTTOCKS_EXPOSED', 
+                'ANUS_EXPOSED', 'FEET_EXPOSED'
+            ]
+            
+            sexy_classes = [
+                'FEMALE_BREAST_COVERED', 'BUTTOCKS_COVERED',
+                'BELLY_EXPOSED', 'FEMALE_GENITALIA_COVERED',
+                'MALE_GENITALIA_COVERED', 'ARMPITS_EXPOSED'
+            ]
+            
+            # Safe classes don't contribute to nudity
+            safe_classes = [
+                'FACE_FEMALE', 'FACE_MALE', 'FEET_COVERED',
+                'BELLY_COVERED', 'ARMPITS_COVERED'
+            ]
             
             # Check if any detections exist
             if detections and isinstance(detections, list) and len(detections) > 0:
@@ -70,15 +88,48 @@ class NudityClassifier:
                 if detection_count > 0 and isinstance(detections[0], dict):
                     logger.debug(f"Detection keys: {list(detections[0].keys())}")
                 
-                # Set a default nudity score based on the number of detections
-                nudity_score = min(80, detection_count * 20)
-                sexy_score = min(50, detection_count * 10)
+                # Process each detection
+                nude_hits = 0
+                nude_score_sum = 0
+                sexy_hits = 0
+                sexy_score_sum = 0
+                
+                for detection in detections:
+                    if 'class' in detection and 'score' in detection:
+                        cls = detection['class']
+                        score = detection['score']
+                        
+                        if cls in nude_classes:
+                            nude_hits += 1
+                            nude_score_sum += score
+                            logger.debug(f"Found nude element: {cls} with score {score}")
+                        elif cls in sexy_classes:
+                            sexy_hits += 1
+                            sexy_score_sum += score
+                            logger.debug(f"Found sexy element: {cls} with score {score}")
+                        else:
+                            logger.debug(f"Found other element: {cls} with score {score}")
+                
+                # Calculate final scores
+                if nude_hits > 0:
+                    nudity_score = (nude_score_sum / nude_hits) * 100
+                    nudity_score = min(100, nudity_score) 
+                
+                if sexy_hits > 0:
+                    sexy_score = (sexy_score_sum / sexy_hits) * 50  # Reduce the impact of sexy content
+                    sexy_score = min(80, sexy_score)  # Cap at 80% for sexy
+                
+                # If we have no nude elements but have sexy elements, reduce the overall nudity score
+                if nude_hits == 0 and sexy_hits > 0:
+                    nudity_score = sexy_score * 0.4  # Sexy content contributes little to nudity if no nudity detected
             else:
                 # No detections, assume image is safe
                 logger.info("No detections found in image")
                 detection_count = 1  # Avoid division by zero
                 nudity_score = 0
                 sexy_score = 0
+                
+            logger.info(f"Calculated nudity score: {nudity_score:.2f}%, sexy score: {sexy_score:.2f}%")
             
             # Calculate safe score as inverse of nudity and sexy scores
             safe_score = max(0, 100 - nudity_score - sexy_score)
